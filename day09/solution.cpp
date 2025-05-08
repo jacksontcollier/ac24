@@ -58,13 +58,8 @@ int main(int argc, char** argv)
     cout << "Part 1 Answer: Checksum is " << checksum << "\n";
 
     vector<int> compact2_fileblocks = compact2(diskmap);
-    cout << "\n";
-    cout << "Part 2 FileBlocks\n";
-    cout << "=================\n";
-    for (size_t i = 0; i < compact2_fileblocks.size(); i++) {
-        cout << compact2_fileblocks[i] << " ";
-    }
-    cout << "\n";
+    checksum = calc_checksum(compact2_fileblocks);
+    cout << "Part 2 Answer: Checksum is " << checksum << "\n";
 
     return 0;
 }
@@ -181,29 +176,16 @@ vector<int> compact2(const string& diskmap)
         is_reading_file_block = !is_reading_file_block;
     }
 
-    /*
-    cout << "Free Blocks\n";
-    cout << "===========\n";
-    for (auto& mit : free_blocks) {
-        size_t location = mit.first;
-        cout << "Location: " << location << ", Size: " << mit.second->size << "\n";
-    }
-
-    cout << "\n";
-    cout << "File Blocks\n";
-    cout << "===========\n";
-    for (size_t i = 0; i < file_blocks.size(); i++) {
-        cout << "Location: " << file_blocks[i]->location << ", ID: "
-             << file_blocks[i]->id << ", Size: " << file_blocks[i]->size << "\n";
-    }
-    */
-
     map<size_t, FileBlock> relocated_file_blocks;
     for (signed long i = file_blocks.size() - 1; i >= 0; i--) {
         FileBlock& file_block = file_blocks[i];
         bool found_file_block = false;
         for (auto mit = free_blocks.begin(); mit != free_blocks.end(); mit++) {
             FreeBlock& free_block = mit->second;
+            if (free_block.location > file_block.location) {
+                break;
+            }
+
             if (free_block.size >= file_block.size) {
                 // Found new location for file block
                 FileBlock new_file_block;
@@ -211,36 +193,41 @@ vector<int> compact2(const string& diskmap)
                 new_file_block.location = free_block.location;
                 new_file_block.size = file_block.size;
                 relocated_file_blocks.insert(make_pair(new_file_block.location, new_file_block));
-                free_blocks.erase(mit);
                 if (free_block.size > file_block.size) {
                     FreeBlock new_free_block;
                     new_free_block.size = free_block.size - file_block.size;
                     new_free_block.location = free_block.location + file_block.size;
+                    
                     free_blocks.insert(make_pair(new_free_block.location, new_free_block));
                 }
-                FreeBlock new_free_block(FreeBlock());
-                new_free_block->size = file_block.size;
-                new_free_block->location = file_block.location;
+                free_blocks.erase(mit);
+                FreeBlock new_free_block;
+                new_free_block.size = file_block.size;
+                new_free_block.location = file_block.location;
+                auto mit = free_blocks.find(new_free_block.location);
+                if (mit != free_blocks.end()) {
+                    free_blocks.erase(mit);
+                }
                 free_blocks.insert(make_pair(new_free_block.location, new_free_block));
                 found_file_block = true;
                 break;
             }
         }
         if (!found_file_block) {
-            relocated_file_blocks.insert(make_pair(file_block->location, file_block));
+            relocated_file_blocks.insert(make_pair(file_block.location, file_block));
         }
     }
 
     for (auto relocated_file_blocks_iter : relocated_file_blocks) {
-        shared_ptr<FileBlock> file_block = relocated_file_blocks_iter.second;
-        for (size_t i = file_block->location; i < (file_block->location + file_block->size); i++) {
-            compact_file_blocks[i] = file_block->id;
+        FileBlock& file_block = relocated_file_blocks_iter.second;
+        for (size_t i = file_block.location; i < (file_block.location + file_block.size); i++) {
+            compact_file_blocks[i] = file_block.id;
         }
     }
 
     for (auto free_block_iter : free_blocks) {
-        shared_ptr<FreeBlock> free_block = free_block_iter.second;
-        for (size_t i = free_block->location; i < (free_block->location + free_block->size); i++) {
+        FreeBlock& free_block = free_block_iter.second;
+        for (size_t i = free_block.location; i < (free_block.location + free_block.size); i++) {
             compact_file_blocks[i] = -1;
         }
     }
