@@ -1,14 +1,17 @@
-#include "Stone.hpp"
-
 #include <fstream>
 #include <iostream>
-#include <list>
+#include <sstream>
 #include <string>
 #include <unordered_map>
 
 using namespace std;
 
-#define BLINK_LIMIT 75
+#define P1_BLINK_LIMIT 25
+#define P2_BLINK_LIMIT 75
+
+typedef unordered_map<unsigned long long, unsigned long long> Stone2CountMap;
+
+unsigned long long get_stone_count(const Stone2CountMap& input, const size_t BLINK_LIMIT);
 
 int main(int argc, char* argv[])
 {
@@ -29,7 +32,8 @@ int main(int argc, char* argv[])
 
     string linebuf;
 
-    unordered_map<unsigned long long, unsigned long long> stone2count;
+    Stone2CountMap stone2count;
+
     while (getline(fin, linebuf)) {
         stringstream ss;
         ss.str(linebuf);
@@ -44,8 +48,21 @@ int main(int argc, char* argv[])
         }
     }
 
+    unsigned long long p1_answer = get_stone_count(stone2count, P1_BLINK_LIMIT);
+    unsigned long long p2_answer = get_stone_count(stone2count, P2_BLINK_LIMIT);
+
+    cout << "Part 1 Answer: " << p1_answer << "\n";
+    cout << "Part 2 Answer: " << p2_answer << "\n";
+
+    return 0;
+}
+
+unsigned long long get_stone_count(const Stone2CountMap& input, const size_t BLINK_LIMIT)
+{
+    Stone2CountMap stone2count = input;
+
     for (size_t i = 0; i < BLINK_LIMIT; i++) {
-        unordered_map<unsigned long long, unsigned long long> new_stone2count;
+        Stone2CountMap new_stone2count;
         for (auto mit = stone2count.begin(); mit != stone2count.end(); mit++) {
             if (mit->first == 0) {
                 auto mit2 = new_stone2count.find(1);
@@ -88,11 +105,9 @@ int main(int argc, char* argv[])
 
     unsigned long long sum = 0;
 
-
     for (auto mit = stone2count.begin(); mit != stone2count.end(); mit++) {
         sum += mit->second;
     }
-    cout << "Part 1 Answer: " << sum << "\n";
 
-    return 0;
+    return sum;
 }
